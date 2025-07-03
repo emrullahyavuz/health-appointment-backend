@@ -86,14 +86,14 @@ const login = async (req, res) => {
                 email: user.email, 
                 role: user.role 
             },
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRE || "24h" }
+            process.env.JWT_ACCESS_TOKEN_SECRET,
+            { expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRES_IN || "24h" }
         );
 
         const refreshToken = jwt.sign(
             { userId: user._id },
-            process.env.JWT_SECRET + "_refresh",
-            { expiresIn: "7d" }
+            process.env.JWT_REFRESH_TOKEN_SECRET,
+            { expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRES_IN || "7d" }
         );
 
         // Remove password from response
@@ -139,7 +139,7 @@ const refreshToken = async (req, res) => {
         }
 
         // Verify refresh token
-        const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET + "_refresh");
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_TOKEN_SECRET);
         
         // Find user
         const user = await User.findById(decoded.userId);
@@ -154,8 +154,8 @@ const refreshToken = async (req, res) => {
                 email: user.email, 
                 role: user.role 
             },
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRE || "24h" }
+            process.env.JWT_ACCESS_TOKEN_SECRET,
+            { expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRES_IN}
         );
 
         res.status(200).json({ 
