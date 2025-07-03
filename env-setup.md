@@ -42,16 +42,44 @@ If you prefer using Docker:
 docker run --name mongodb -d -p 27017:27017 mongo:latest
 ```
 
-### Step 3: Restart Your Application
+### Step 3: Install Dependencies
+Install the new bcryptjs dependency:
+```bash
+npm install
+```
+
+### Step 4: Restart Your Application
 After creating the `.env` file, restart your application:
 ```bash
 npm start
 ```
 
-### Step 4: Verify Connection
-You should see "MongoDB connected" in your console when the application starts successfully.
+### Step 5: Verify Connection
+You should see "MongoDB connected successfully" in your console when the application starts successfully.
+
+## API Endpoints
+
+### Public Routes
+- `POST /api/auth/register` - Register a new user
+- `POST /api/auth/login` - Login a user
+- `POST /api/auth/logout` - Logout a user
+- `POST /api/auth/refresh-token` - Refresh access token
+
+### Protected Routes (Require Authorization Header)
+- `GET /api/auth/profile` - Get user profile
+- `PUT /api/auth/profile` - Update user profile
+- `DELETE /api/auth/profile` - Delete user account (soft delete)
+
+### Authentication
+For protected routes, include the Authorization header:
+```
+Authorization: Bearer <your-access-token>
+```
 
 ## Security Notes
 - Never commit your `.env` file to version control
 - Use strong, unique JWT secrets in production
-- Consider using environment-specific configuration files 
+- Consider using environment-specific configuration files
+- Passwords are automatically hashed using bcryptjs
+- JWT tokens expire after 24 hours (configurable)
+- Refresh tokens expire after 7 days 
