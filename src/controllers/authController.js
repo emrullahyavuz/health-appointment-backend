@@ -1,6 +1,6 @@
 const User = require("../models/User");
-const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { hashPassword, verifyPassword } = require("../utils/passwordUtils");
 
 // Register a new user
 const register = async (req, res) => {
@@ -18,9 +18,8 @@ const register = async (req, res) => {
             return res.status(400).json({ message: "User with this email already exists" });
         }
 
-        // Hash password
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        // Hash password using utility function
+        const hashedPassword = await hashPassword(password);
 
         // Create new user
         const newUser = new User({
@@ -73,8 +72,8 @@ const login = async (req, res) => {
             return res.status(401).json({ message: "Account is deactivated" });
         }
 
-        // Verify password
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        // Verify password using utility function
+        const isPasswordValid = await verifyPassword(password, user.password);
         if (!isPasswordValid) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
