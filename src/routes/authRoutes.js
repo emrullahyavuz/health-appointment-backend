@@ -6,7 +6,7 @@ const {
     logout, 
     refreshToken 
 } = require("../controllers/authController");
-const { registerSchema, loginSchema } = require("../validator/userValidator");
+const { registerSchema, loginSchema } = require("../validators/userValidator");
 const validateBody = require("../middlewares/validateBody");
 
 // Authentication routes

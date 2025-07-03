@@ -7,6 +7,7 @@ const authRoutes = require("./routes/authRoutes.js");
 const userRoutes = require("./routes/userRoutes.js");
 const morgan = require("morgan");
 const rateLimit = require("./middlewares/rateLimit.js");
+const errorHandler = require("./middlewares/errorHandler");
 
 // Middlewares
 app.use(morgan("dev"));
@@ -18,5 +19,7 @@ app.use(rateLimit);
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+
+app.use(errorHandler);
 
 module.exports = app;
