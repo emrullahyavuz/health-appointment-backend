@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const { hashPassword, verifyPassword } = require("../utils/passwordUtils");
+const { createAccessToken, createRefreshToken } = require("../utils/jwtUtils");
 
 // Register a new user
 const register = async (req, res) => {
@@ -79,21 +80,28 @@ const login = async (req, res) => {
         }
 
         // Generate JWT tokens
-        const accessToken = jwt.sign(
-            { 
-                userId: user._id, 
-                email: user.email, 
-                role: user.role 
-            },
-            process.env.JWT_ACCESS_TOKEN_SECRET,
-            { expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRES_IN || "24h" }
-        );
+        const accessToken = createAccessToken({
+             userId: user._id ,
+             email: user.email,
+             role: user.role
+            });
+        const refreshToken = createRefreshToken({ userId: user._id, email: user.email, role: user.role });
 
-        const refreshToken = jwt.sign(
-            { userId: user._id },
-            process.env.JWT_REFRESH_TOKEN_SECRET,
-            { expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRES_IN || "7d" }
-        );
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV !== "development",
+            sameSite: "strict",
+            path: "/"
+        };
+
+        res.cookie("refreshToken", refreshToken, {
+            ...cookieOptions, 
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+        res.cookie("accessToken", accessToken, {
+            ...cookieOptions, 
+            maxAge: 15 * 60 * 1000 // 15 minutes
+        });
 
         // Remove password from response
         const userResponse = {
