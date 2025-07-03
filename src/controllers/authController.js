@@ -2,6 +2,7 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const { hashPassword, verifyPassword } = require("../utils/passwordUtils");
 const { createAccessToken, createRefreshToken } = require("../utils/jwtUtils");
+const RefreshToken = require("../models/RefreshToken");
 
 // Register a new user
 const register = async (req, res) => {
@@ -79,6 +80,9 @@ const login = async (req, res) => {
             return res.status(401).json({ message: "Invalid email or password" });
         }
 
+        // Delete old refresh token
+        await RefreshToken.deleteOne({ userId: user._id });
+
         // Generate JWT tokens
         const accessToken = createAccessToken({
              userId: user._id ,
@@ -93,6 +97,16 @@ const login = async (req, res) => {
             sameSite: "strict",
             path: "/"
         };
+
+        // Save refresh token to database
+        const newRefreshToken = new RefreshToken({
+            userId: user._id,
+            token: refreshToken,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+        });
+        await newRefreshToken.save();
+
+
 
         res.cookie("refreshToken", refreshToken, {
             ...cookieOptions, 
@@ -127,8 +141,13 @@ const login = async (req, res) => {
 // Logout a user
 const logout = async (req, res) => {
     try {
-        // In a real application, you might want to blacklist the token
-        // For now, we'll just return a success message
+        const refreshToken = req.cookies.refreshToken;
+        if (!refreshToken) {
+            return res.status(400).json({ message: "Refresh token is required" });
+        }
+        await RefreshToken.deleteOne({ token: refreshToken });
+        res.clearCookie("refreshToken");
+        res.clearCookie("accessToken");
         res.status(200).json({ message: "User logged out successfully" });
     } catch (error) {
         console.error("Logout error:", error);
