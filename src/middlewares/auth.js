@@ -3,15 +3,9 @@ const User = require("../models/User");
 
 const auth = async (req, res, next) => {
   try {
-    let token;
-
     // Önce Authorization header'ı kontrol et
-    const authHeader = req.headers.authorization || req.header("Authorization");
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      token = authHeader.split(" ")[1];
-    } else if (req.cookies && req.cookies.accessToken) {
-      token = req.cookies.accessToken;
-    }
+    const token =  req.cookies.accessToken || req.headers.authorization?.split(" ")[1];
+    console.log(token)
 
     if (!token) {
       return res.status(401).json({ message: "Access denied. No token provided." });
