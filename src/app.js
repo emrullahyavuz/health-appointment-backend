@@ -8,9 +8,11 @@ const userRoutes = require("./routes/userRoutes.js");
 const morgan = require("morgan");
 const rateLimit = require("./middlewares/rateLimit.js");
 const errorHandler = require("./middlewares/errorHandler");
+const helmet = require("./middlewares/helmetConfig");
 
 // Middlewares
 app.use(morgan("dev"));
+app.use(helmet);
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
