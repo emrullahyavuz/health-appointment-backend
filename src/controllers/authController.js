@@ -7,11 +7,11 @@ const RefreshToken = require("../models/RefreshToken");
 // Register a new user
 const register = async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
+        const { name, email, telephone, password, role } = req.body;
         
         // Validate required fields
-        if (!name || !email || !password) {
-            return res.status(400).json({ message: "Name, email, and password are required" });
+        if (!name || !email || !telephone || !password) {
+            return res.status(400).json({ message: "Name, email, telephone, and password are required" });
         }
 
         // Check if user already exists
