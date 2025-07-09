@@ -138,6 +138,46 @@ const login = async (req, res) => {
     }
 };
 
+// update user password
+const updatePassword = async (req, res) => {
+    // Get user ID from JWT middleware
+    if (!req.user || !req.user.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = req.user.userId; // From JWT middleware
+    const { oldPassword, newPassword } = req.body;
+    try {
+        // Validate required fields
+        if (!oldPassword || !newPassword) {
+            return res.status(400).json({ message: "Old password and new password are required" });
+        }
+
+        // Find user by ID
+        const user = await User.findById(userId);
+        if (!user || user.isDeleted) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Verify old password
+        const isOldPasswordValid = await verifyPassword(oldPassword, user.password);
+        if (!isOldPasswordValid) {
+            return res.status(401).json({ message: "Invalid old password" });
+        }
+
+        // Hash new password
+        const hashedNewPassword = await hashPassword(newPassword);
+
+        // Update user password
+        user.password = hashedNewPassword;
+        await user.save();
+
+        res.status(200).json({ message: "Password updated successfully" });
+    } catch (error) {
+        console.error("Update password error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
 // Logout a user
 const logout = async (req, res) => {
     try {
@@ -287,6 +327,7 @@ const deleteUser = async (req, res) => {
 module.exports = {
     register,
     login,
+    updatePassword,
     logout,
     refreshToken,
     getProfile,
