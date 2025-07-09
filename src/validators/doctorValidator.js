@@ -30,6 +30,11 @@ const createDoctorProfileSchema = Joi.object({
     consultationFee: Joi.number().min(0).required(),
     location: Joi.string().max(200).required(),
     about: Joi.string().max(2000).optional(),
+    isAvailable: Joi.boolean().default(true),
+    isVerified: Joi.boolean().default(false),
+    rating: Joi.number().min(0).max(5).default(0),
+    reviewCount: Joi.number().default(0),
+    totalPatients: Joi.number().default(0),
     workingHours: Joi.array().items(workingHoursSchema).min(1).required()
 });
 
