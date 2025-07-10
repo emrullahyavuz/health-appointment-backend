@@ -1,47 +1,111 @@
-const mongoose = require("mongoose");
+const mongoose = require("mongoose")
+const bcrypt = require("bcryptjs")
 
-
-// User Schema
-const userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema(
+  {
     name: {
-        type: String,
-        required: true
+      type: String,
+      required: [true, "Name is required"],
+      trim: true,
+      maxlength: [100, "Name cannot exceed 100 characters"],
     },
     email: {
-        type: String,
-        required: true,
-        unique: true
-    },
-    telephone: {
-        type: String,
-        required: true,
-        match: [/^[0-9]{10,15}$/, "Please enter valid phone number"]
+      type: String,
+      required: [true, "Email is required"],
+      unique: true,
+      lowercase: true,
+      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, "Please enter a valid email"],
     },
     password: {
-        type: String,
-        required: true
+      type: String,
+      required: [true, "Password is required"],
+      minlength: [8, "Password must be at least 8 characters"],
+      select: false,
+    },
+    phone: {
+      type: String,
+      required: [true, "Phone number is required"],
+      match: [/^[+]?[1-9][\d]{0,15}$/, "Please enter a valid phone number"],
     },
     role: {
-        type: String,
-        enum: ["admin", "patient", "doctor"],
-        default: "patient"
+      type: String,
+      enum: ["patient", "doctor", "admin"],
+      default: "patient",
+    },
+    avatar: {
+      type: String,
+      default: null,
+    },
+    dateOfBirth: {
+      type: Date,
+    },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other", "prefer-not-to-say"],
+    },
+    address: {
+      type: String,
+      maxlength: [500, "Address cannot exceed 500 characters"],
+    },
+    emergencyContact: {
+      type: String,
+      match: [/^[+]?[1-9][\d]{0,15}$/, "Please enter a valid emergency contact number"],
     },
     isActive: {
-        type: Boolean,
-        default: true
+      type: Boolean,
+      default: true,
     },
-    isDeleted: {
-        type: Boolean,
-        default: false
+    isVerified: {
+      type: Boolean,
+      default: false,
     },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now
-    }
-});
+    verificationToken: String,
+    passwordResetToken: String,
+    passwordResetExpires: Date,
+    lastLogin: Date,
+    refreshTokens: [
+      {
+        token: String,
+        createdAt: {
+          type: Date,
+          default: Date.now,
+          expires: 604800, // 7 days
+        },
+      },
+    ],
+  },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  },
+)
 
-module.exports = mongoose.model("User", userSchema);    
+// Virtual for user's age
+userSchema.virtual("age").get(function () {
+  if (this.dateOfBirth) {
+    return Math.floor((Date.now() - this.dateOfBirth.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+  }
+  return null
+})
+
+// Hash password before saving
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next()
+
+  this.password = await bcrypt.hash(this.password, 12)
+  next()
+})
+
+// Compare password method
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password)
+}
+
+// Update last login
+userSchema.methods.updateLastLogin = function () {
+  this.lastLogin = new Date()
+  return this.save({ validateBeforeSave: false })
+}
+
+module.exports = mongoose.model("User", userSchema)
