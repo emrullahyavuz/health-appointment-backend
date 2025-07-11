@@ -5,8 +5,12 @@ const registerSchema = Joi.object({
   name: Joi.string().min(3).max(30).required(),
   email: Joi.string().email().required(),
   password: Joi.string().min(6).max(128).required(),
-  telephone: Joi.string().pattern(/^[0-9]{10,15}$/).required(),
+  phone: Joi.string().pattern(/^[0-9]{10,15}$/).required(),
   role: Joi.string().valid('user', 'admin', 'doctor').required(),
+  gender: Joi.string().valid('male', 'female').required(),
+  dateOfBirth: Joi.date().required(),
+  address: Joi.string().max(500).required(),
+  emergencyContact: Joi.string().pattern(/^[+]?[1-9][\d]{0,15}$/).required(),
 });
 
 // Kullanıcı girişi için şema
