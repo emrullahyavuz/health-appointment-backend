@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const { hashPassword, verifyPassword } = require("../utils/passwordUtils");
 const { createAccessToken, createRefreshToken } = require("../utils/jwtUtils");
 const RefreshToken = require("../models/RefreshToken");
+const { generateVerificationToken, sendVerificationEmail } = require("../utils/emailUtils");
 
 // Register a new user
 const register = async (req, res) => {
@@ -26,6 +27,9 @@ const register = async (req, res) => {
         .status(400)
         .json({ message: "User with this email already exists" });
     }
+    // Generate verification token
+    const verificationToken = generateVerificationToken();
+    
     // Create new user (password hash işlemi modelde yapılacak)
     const newUser = new User({
       name,
@@ -37,8 +41,14 @@ const register = async (req, res) => {
       gender,
       address,
       emergencyContact,
+      verificationToken,
+      isVerified: false, // Email doğrulanana kadar false
     });
     await newUser.save();
+    
+    // Send verification email
+    const emailSent = await sendVerificationEmail(email, name, verificationToken);
+    
     // Remove password from response
     const userResponse = {
       _id: newUser._id,
@@ -50,8 +60,11 @@ const register = async (req, res) => {
       isVerified: newUser.isVerified,
       createdAt: newUser.createdAt,
     };
+    
     res.status(201).json({
-      message: "User created successfully",
+      message: emailSent 
+        ? "User created successfully. Please check your email to verify your account." 
+        : "User created successfully but verification email could not be sent.",
       user: userResponse,
     });
   } catch (error) {
@@ -73,6 +86,11 @@ const login = async (req, res) => {
     }
     if (!user.isActive) {
       return res.status(401).json({ message: "Account is deactivated" });
+    }
+    if (!user.isVerified) {
+      return res.status(401).json({ 
+        message: "Please verify your email address before logging in. Check your email for verification link." 
+      });
     }
     // Şifreyi karşılaştır
     const isPasswordValid = await user.comparePassword(password);
@@ -176,6 +194,73 @@ const logout = async (req, res) => {
     res.status(200).json({ message: "User logged out successfully" });
   } catch (error) {
     console.error("Logout error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Verify email
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({ message: "Verification token is required" });
+    }
+
+    // Find user with this verification token
+    const user = await User.findOne({ verificationToken: token });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired verification token" });
+    }
+
+    // Update user as verified
+    user.isVerified = true;
+    user.verificationToken = undefined; // Clear the token
+    await user.save();
+
+    res.status(200).json({
+      message: "Email verified successfully. You can now login to your account."
+    });
+  } catch (error) {
+    console.error("Email verification error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Resend verification email
+const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: "Email is already verified" });
+    }
+
+    // Generate new verification token
+    const verificationToken = generateVerificationToken();
+    user.verificationToken = verificationToken;
+    await user.save();
+
+    // Send verification email
+    const emailSent = await sendVerificationEmail(email, user.name, verificationToken);
+
+    res.status(200).json({
+      message: emailSent 
+        ? "Verification email sent successfully" 
+        : "Failed to send verification email"
+    });
+  } catch (error) {
+    console.error("Resend verification email error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -326,4 +411,6 @@ module.exports = {
   getProfile,
   updateProfile,
   deleteUser,
+  verifyEmail,
+  resendVerificationEmail,
 };

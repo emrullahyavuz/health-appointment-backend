@@ -12,7 +12,9 @@ const {
     getDoctorStats,
     deleteDoctorProfile,
     adminGetAllDoctors,
-    adminVerifyDoctor
+    adminVerifyDoctor,
+    debugDoctorUser,
+    fixDoctorUserRelationship
 } = require("../controllers/doctorController");
 
 const auth = require("../middlewares/auth");
@@ -38,6 +40,8 @@ const requireRole = (role) => {
 
 // Public routes (no authentication required)
 router.get("/", validateBody(doctorQuerySchema, "query"), getAllDoctors); // Get all doctors with filtering
+router.get("/debug", debugDoctorUser); // Debug endpoint to check doctor-user relationships
+router.post("/fix-relationship", fixDoctorUserRelationship); // Fix doctor-user relationship
 router.get("/:id", getDoctorById); // Get specific doctor by ID
 router.get("/:id/reviews", getDoctorReviews); // Get doctor's reviews
 

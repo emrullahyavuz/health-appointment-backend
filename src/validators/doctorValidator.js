@@ -80,6 +80,7 @@ const doctorQuerySchema = Joi.object({
         "Oncology", "Radiology", "Anesthesiology", "Emergency Medicine"
     ).optional(),
     location: Joi.string().optional(),
+    rating: Joi.number().min(0).max(5).optional(),
     minRating: Joi.number().min(0).max(5).optional(),
     maxFee: Joi.number().min(0).optional(),
     isAvailable: Joi.boolean().optional(),

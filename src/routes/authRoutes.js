@@ -5,7 +5,9 @@ const {
     login, 
     updatePassword,
     logout, 
-    refreshToken 
+    refreshToken,
+    verifyEmail,
+    resendVerificationEmail
 } = require("../controllers/authController");
 const { registerSchema, loginSchema } = require("../validators/userValidator");
 const validateBody = require("../middlewares/validateBody");
@@ -16,5 +18,9 @@ router.post("/login", validateBody(loginSchema), login);
 router.post("/update-password", auth, updatePassword);
 router.post("/logout", auth, logout);
 router.post("/refresh-token", auth, refreshToken);
+
+// Email verification routes
+router.get("/verify-email/:token", verifyEmail);
+router.post("/resend-verification", resendVerificationEmail);
 
 module.exports = router;

@@ -169,12 +169,12 @@ doctorSchema.index({ location: 1 })
 doctorSchema.index({ user: 1 })
 
 // Populate user data by default
-doctorSchema.pre(/^find/, function (next) {
-  this.populate({
-    path: "user",
-    select: "name email phone avatar",
-  })
-  next()
-})
+// doctorSchema.pre(/^find/, function (next) {
+//   this.populate({
+//     path: "user",
+//     select: "name email phone avatar",
+//   })
+//   next()
+// })
 
 module.exports = mongoose.model("Doctor", doctorSchema)

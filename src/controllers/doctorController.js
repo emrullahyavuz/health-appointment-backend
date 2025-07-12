@@ -9,6 +9,7 @@ const getAllDoctors = async (req, res) => {
         const {
             specialty,
             location,
+            rating,
             minRating,
             maxFee,
             isAvailable,
@@ -22,6 +23,7 @@ const getAllDoctors = async (req, res) => {
         const filter = {};
         if (specialty) filter.specialty = specialty;
         if (location) filter.location = { $regex: location, $options: "i" };
+        if (rating) filter.rating = parseFloat(rating);
         if (minRating) filter.rating = { $gte: parseFloat(minRating) };
         if (maxFee) filter.consultationFee = { $lte: parseFloat(maxFee) };
         if (isAvailable !== undefined) filter.isAvailable = isAvailable === "true";
@@ -38,7 +40,11 @@ const getAllDoctors = async (req, res) => {
             .sort(sort)
             .skip(skip)
             .limit(parseInt(limit))
-            .populate("user", "name email telephone");
+            .populate({
+                path: "user",
+                select: "name email phone avatar",
+                model: "User"
+            });
 
         // Get total count for pagination
         const total = await Doctor.countDocuments(filter);
@@ -51,7 +57,8 @@ const getAllDoctors = async (req, res) => {
                 totalPages: Math.ceil(total / parseInt(limit)),
                 totalDoctors: total,
                 hasNext: skip + doctors.length < total,
-                hasPrev: parseInt(page) > 1
+                hasPrev: parseInt(page) > 1,
+                avarageRating: doctors.reduce((sum, doctor) => sum + doctor.rating, 0) / doctors.length
             }
         });
     } catch (error) {
@@ -66,7 +73,11 @@ const getDoctorById = async (req, res) => {
         const { id } = req.params;
 
         const doctor = await Doctor.findById(id)
-            .populate("user", "name email telephone");
+            .populate({
+                path: "user",
+                select: "name email phone avatar",
+                model: "User"
+            });
 
         if (!doctor) {
             return res.status(404).json({ message: "Doctor not found" });
@@ -88,7 +99,11 @@ const getDoctorProfile = async (req, res) => {
         const userId = req.user.userId;
 
         const doctor = await Doctor.findOne({ user: userId })
-            .populate("user", "name email telephone");
+            .populate({
+                path: "user",
+                select: "name email phone avatar",
+                model: "User"
+            });
 
         if (!doctor) {
             return res.status(404).json({ message: "Doctor profile not found" });
@@ -147,7 +162,7 @@ const createDoctorProfile = async (req, res) => {
         await newDoctor.save();
 
         // Populate user data
-        await newDoctor.populate("user", "name email telephone");
+        await newDoctor.populate("user", "name email phone");
 
         res.status(201).json({
             message: "Doctor profile created successfully",
@@ -181,7 +196,7 @@ const updateDoctorProfile = async (req, res) => {
             { user: userId },
             updateData,
             { new: true, runValidators: true }
-        ).populate("user", "name email telephone");
+        ).populate("user", "name email phone");
 
         if (!doctor) {
             return res.status(404).json({ message: "Doctor profile not found" });
@@ -214,7 +229,7 @@ const updateAvailability = async (req, res) => {
             { user: userId },
             updateData,
             { new: true, runValidators: true }
-        ).populate("user", "name email telephone");
+        ).populate("user", "name email phone");
 
         if (!doctor) {
             return res.status(404).json({ message: "Doctor profile not found" });
@@ -410,7 +425,7 @@ const adminGetAllDoctors = async (req, res) => {
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
         const doctors = await Doctor.find(filter)
-            .populate("user", "name email telephone")
+            .populate("user", "name email phone")
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(parseInt(limit));
@@ -442,7 +457,7 @@ const adminVerifyDoctor = async (req, res) => {
             id,
             { isVerified },
             { new: true, runValidators: true }
-        ).populate("user", "name email telephone");
+        ).populate("user", "name email phone");
 
         if (!doctor) {
             return res.status(404).json({ message: "Doctor not found" });
@@ -454,6 +469,74 @@ const adminVerifyDoctor = async (req, res) => {
         });
     } catch (error) {
         console.error("Admin verify doctor error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// Debug function to check doctor-user relationship
+const debugDoctorUser = async (req, res) => {
+    try {
+        const doctors = await Doctor.find({}).lean();
+        
+        const doctorsWithUserInfo = await Promise.all(
+            doctors.map(async (doctor) => {
+                const user = await User.findById(doctor.user).select('name email phone');
+                return {
+                    doctorId: doctor._id,
+                    userId: doctor.user,
+                    user: user,
+                    hasUser: !!user
+                };
+            })
+        );
+
+        // Get all users to see what's available
+        const allUsers = await User.find({}).select('_id name email phone role').lean();
+
+        res.status(200).json({
+            message: "Debug info retrieved",
+            doctors: doctorsWithUserInfo,
+            allUsers: allUsers,
+            totalUsers: allUsers.length
+        });
+    } catch (error) {
+        console.error("Debug error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// Fix doctor-user relationship
+const fixDoctorUserRelationship = async (req, res) => {
+    try {
+        // Get the first doctor record
+        const doctor = await Doctor.findOne({});
+        if (!doctor) {
+            return res.status(404).json({ message: "No doctor found" });
+        }
+
+        // Get the first user with doctor role
+        const user = await User.findOne({ role: "doctor" });
+        if (!user) {
+            return res.status(404).json({ message: "No doctor user found" });
+        }
+
+        // Update the doctor's user reference
+        const updatedDoctor = await Doctor.findByIdAndUpdate(
+            doctor._id,
+            { user: user._id },
+            { new: true }
+        ).populate({
+            path: "user",
+            select: "name email phone avatar",
+            model: "User"
+        });
+
+        res.status(200).json({
+            message: "Doctor-user relationship fixed",
+            doctor: updatedDoctor
+        });
+    } catch (error) {
+        console.error("Fix doctor-user relationship error:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
@@ -470,5 +553,7 @@ module.exports = {
     getDoctorStats,
     deleteDoctorProfile,
     adminGetAllDoctors,
-    adminVerifyDoctor
+    adminVerifyDoctor,
+    debugDoctorUser,
+    fixDoctorUserRelationship
 };
