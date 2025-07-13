@@ -280,6 +280,8 @@ const refreshToken = async (req, res) => {
       process.env.JWT_REFRESH_TOKEN_SECRET
     );
 
+    await RefreshToken.deleteOne({ token: refreshToken });
+
     // Find user
     const user = await User.findById(decoded.userId);
     if (!user || !user.isActive) {
