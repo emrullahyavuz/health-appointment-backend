@@ -8,17 +8,8 @@ const { generateVerificationToken, sendVerificationEmail } = require("../utils/e
 // Register a new user
 const register = async (req, res) => {
   try {
-    const {
-      name,
-      email,
-      password,
-      phone,
-      role,
-      dateOfBirth,
-      gender,
-      address,
-      emergencyContact,
-    } = req.body;
+    const { name, email, password, phone, role } = req.body
+
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -32,17 +23,12 @@ const register = async (req, res) => {
     
     // Create new user (password hash işlemi modelde yapılacak)
     const newUser = new User({
-      name,
-      email,
-      password,
-      phone,
-      role,
-      dateOfBirth,
-      gender,
-      address,
-      emergencyContact,
-      verificationToken,
-      isVerified: false, // Email doğrulanana kadar false
+    name,
+    email,
+    password,
+    phone,
+    role: role || "patient",
+    verificationToken,
     });
     await newUser.save();
     
@@ -56,6 +42,7 @@ const register = async (req, res) => {
       email: newUser.email,
       phone: newUser.phone,
       role: newUser.role,
+      verificationToken: newUser.verificationToken,
       isActive: newUser.isActive,
       isVerified: newUser.isVerified,
       createdAt: newUser.createdAt,
@@ -67,6 +54,7 @@ const register = async (req, res) => {
         : "User created successfully but verification email could not be sent.",
       user: userResponse,
     });
+  
   } catch (error) {
     console.error("Registration error:", error);
     res.status(500).json({ message: "Internal server error" });

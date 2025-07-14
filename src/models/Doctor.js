@@ -166,7 +166,6 @@ doctorSchema.virtual("nextAvailableSlot").get(function () {
 // Index for better query performance
 doctorSchema.index({ specialty: 1, isAvailable: 1, rating: -1 })
 doctorSchema.index({ location: 1 })
-doctorSchema.index({ user: 1 })
 
 // Populate user data by default
 // doctorSchema.pre(/^find/, function (next) {

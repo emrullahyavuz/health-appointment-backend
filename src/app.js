@@ -24,7 +24,7 @@ app.use(rateLimit);
 app.use("/api", rateLimit)
 
 // Data sanitization against NoSQL query injection
-app.use(mongoSanitize());
+// app.use(mongoSanitize());
 
 // Routes
 app.use("/api/auth", authRoutes);
