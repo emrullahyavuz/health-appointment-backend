@@ -473,73 +473,6 @@ const adminVerifyDoctor = async (req, res) => {
     }
 };
 
-// Debug function to check doctor-user relationship
-const debugDoctorUser = async (req, res) => {
-    try {
-        const doctors = await Doctor.find({}).lean();
-        
-        const doctorsWithUserInfo = await Promise.all(
-            doctors.map(async (doctor) => {
-                const user = await User.findById(doctor.user).select('name email phone');
-                return {
-                    doctorId: doctor._id,
-                    userId: doctor.user,
-                    user: user,
-                    hasUser: !!user
-                };
-            })
-        );
-
-        // Get all users to see what's available
-        const allUsers = await User.find({}).select('_id name email phone role').lean();
-
-        res.status(200).json({
-            message: "Debug info retrieved",
-            doctors: doctorsWithUserInfo,
-            allUsers: allUsers,
-            totalUsers: allUsers.length
-        });
-    } catch (error) {
-        console.error("Debug error:", error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-};
-
-// Fix doctor-user relationship
-const fixDoctorUserRelationship = async (req, res) => {
-    try {
-        // Get the first doctor record
-        const doctor = await Doctor.findOne({});
-        if (!doctor) {
-            return res.status(404).json({ message: "No doctor found" });
-        }
-
-        // Get the first user with doctor role
-        const user = await User.findOne({ role: "doctor" });
-        if (!user) {
-            return res.status(404).json({ message: "No doctor user found" });
-        }
-
-        // Update the doctor's user reference
-        const updatedDoctor = await Doctor.findByIdAndUpdate(
-            doctor._id,
-            { user: user._id },
-            { new: true }
-        ).populate({
-            path: "user",
-            select: "name email phone avatar",
-            model: "User"
-        });
-
-        res.status(200).json({
-            message: "Doctor-user relationship fixed",
-            doctor: updatedDoctor
-        });
-    } catch (error) {
-        console.error("Fix doctor-user relationship error:", error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-};
 
 module.exports = {
     getAllDoctors,
@@ -554,6 +487,5 @@ module.exports = {
     deleteDoctorProfile,
     adminGetAllDoctors,
     adminVerifyDoctor,
-    debugDoctorUser,
-    fixDoctorUserRelationship
+
 };

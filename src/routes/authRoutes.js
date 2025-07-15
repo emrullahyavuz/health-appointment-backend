@@ -12,6 +12,7 @@ const {
 const { registerSchema, loginSchema } = require("../validators/userValidator");
 const validateBody = require("../middlewares/validateBody");
 const auth = require("../middlewares/auth");
+
 // Authentication routes
 router.post("/register", validateBody(registerSchema), register);
 router.post("/login", validateBody(loginSchema), login);

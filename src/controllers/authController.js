@@ -300,107 +300,12 @@ const refreshToken = async (req, res) => {
   }
 };
 
-// Get user profile
-const getProfile = async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    const user = await User.findById(userId).select("-password");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    res.status(200).json({ user });
-  } catch (error) {
-    console.error("Get profile error:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-// Update user profile
-const updateProfile = async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    const {
-      name,
-      email,
-      phone,
-      dateOfBirth,
-      gender,
-      address,
-      emergencyContact,
-      avatar,
-    } = req.body;
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    if (email && email !== user.email) {
-      const existingUser = await User.findOne({ email });
-      if (existingUser) {
-        return res.status(400).json({ message: "Email is already taken" });
-      }
-    }
-    if (name) user.name = name;
-    if (email) user.email = email;
-    if (phone) user.phone = phone;
-    if (dateOfBirth) user.dateOfBirth = dateOfBirth;
-    if (gender) user.gender = gender;
-    if (address) user.address = address;
-    if (emergencyContact) user.emergencyContact = emergencyContact;
-    if (avatar) user.avatar = avatar;
-    user.updatedAt = Date.now();
-    await user.save();
-    const userResponse = {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      isActive: user.isActive,
-      updatedAt: user.updatedAt,
-    };
-    res.status(200).json({
-      message: "Profile updated successfully",
-      user: userResponse,
-    });
-  } catch (error) {
-    console.error("Update profile error:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-// Delete user (soft delete)
-const deleteUser = async (req, res) => {
-  try {
-    const userId = req.user.userId;
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Soft delete
-    user.isDeleted = true;
-    user.isActive = false;
-    user.updatedAt = Date.now();
-
-    await user.save();
-
-    res.status(200).json({ message: "User deleted successfully" });
-  } catch (error) {
-    console.error("Delete user error:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
 module.exports = {
   register,
   login,
   updatePassword,
   logout,
   refreshToken,
-  getProfile,
-  updateProfile,
-  deleteUser,
   verifyEmail,
   resendVerificationEmail,
 };
