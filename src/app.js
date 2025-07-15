@@ -11,6 +11,7 @@ const rateLimit = require("./middlewares/rateLimit.js");
 const errorHandler = require("./middlewares/errorHandler");
 const helmet = require("./middlewares/helmetConfig");
 const mongoSanitize = require("express-mongo-sanitize")
+const path = require("path");
 
 // Middlewares
 app.use(morgan("dev"));
@@ -30,6 +31,7 @@ app.use("/api", rateLimit)
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/doctors", doctorRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "./uploads")));
 
 // Error handler
 app.use(errorHandler);

@@ -10,10 +10,11 @@ const {
     deleteUserById 
 } = require("../controllers/userController");
 const auth = require("../middlewares/auth");
+const upload = require("../middlewares/upload");
 
 // User profile routes (authenticated users)
 router.get("/profile", auth, getProfile);
-router.put("/profile", auth, updateProfile);
+router.put("/profile", auth, upload.single("avatar"), updateProfile);
 router.delete("/profile", auth, deleteUser);
 
 // Admin routes (admin only)

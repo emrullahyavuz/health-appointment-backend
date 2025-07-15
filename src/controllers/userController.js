@@ -19,7 +19,7 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
     try {
         const userId = req.user.userId;
-        const { name, email, phone, dateOfBirth, gender, address, emergencyContact, avatar } = req.body;
+        const { name, email, phone, dateOfBirth, gender, address, emergencyContact } = req.body;
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -37,7 +37,9 @@ const updateProfile = async (req, res) => {
         if (gender) user.gender = gender;
         if (address) user.address = address;
         if (emergencyContact) user.emergencyContact = emergencyContact;
-        if (avatar) user.avatar = avatar;
+        if (req.file) {
+            user.avatar = `/uploads/avatars/${req.file.filename}`;
+        }
         user.updatedAt = Date.now();
         await user.save();
         const userResponse = {
@@ -47,7 +49,8 @@ const updateProfile = async (req, res) => {
             phone: user.phone,
             role: user.role,
             isActive: user.isActive,
-            updatedAt: user.updatedAt
+            updatedAt: user.updatedAt,
+            avatar: user.avatar
         };
         res.status(200).json({ 
             message: "Profile updated successfully", 

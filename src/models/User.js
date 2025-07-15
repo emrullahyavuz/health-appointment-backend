@@ -1,5 +1,6 @@
 const mongoose = require("mongoose")
 const bcrypt = require("bcryptjs")
+const ROLES = require("../constants/roles")
 
 const userSchema = new mongoose.Schema(
   {
@@ -29,8 +30,8 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["patient", "doctor", "admin"],
-      default: "patient",
+      enum: Object.values(ROLES),
+      default: ROLES.PATIENT,
     },
     avatar: {
       type: String,
