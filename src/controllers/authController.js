@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const { hashPassword, verifyPassword } = require("../utils/passwordUtils");
 const { createAccessToken, createRefreshToken } = require("../utils/jwtUtils");
 const RefreshToken = require("../models/RefreshToken");
-const { generateVerificationToken, sendVerificationEmail } = require("../utils/emailUtils");
+const { generateVerificationToken, sendVerificationEmail, sendPasswordResetEmail } = require("../utils/emailUtils");
 
 // Register a new user
 const register = async (req, res) => {
@@ -169,6 +169,22 @@ const updatePassword = async (req, res) => {
   }
 };
 
+// forgot password
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  const verificationToken = generateVerificationToken();
+  user.verificationToken = verificationToken;
+  await user.save();
+  const emailSent = await sendPasswordResetEmail(email, user.name, verificationToken);
+  res.status(200).json({ 
+    message: emailSent ? "Password reset email sent successfully" 
+    : "Failed to send password reset email" });
+};
+
 // Logout a user
 const logout = async (req, res) => {
   try {
@@ -300,12 +316,36 @@ const refreshToken = async (req, res) => {
   }
 };
 
+// Şifre sıfırlama (reset password)
+const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: "Token ve yeni şifre gereklidir" });
+    }
+    // Token ile kullanıcıyı bul
+    const user = await User.findOne({ verificationToken: token });
+    if (!user) {
+      return res.status(400).json({ message: "Geçersiz veya süresi dolmuş token" });
+    }
+    user.password = newPassword;
+    user.verificationToken = undefined;
+    await user.save();
+    res.status(200).json({ message: "Şifre başarıyla sıfırlandı" });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 module.exports = {
   register,
   login,
   updatePassword,
+  forgotPassword,
   logout,
   refreshToken,
   verifyEmail,
   resendVerificationEmail,
+  resetPassword
 };
