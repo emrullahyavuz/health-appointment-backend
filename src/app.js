@@ -6,6 +6,8 @@ const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/authRoutes.js");
 const userRoutes = require("./routes/userRoutes.js");
 const doctorRoutes = require("./routes/doctorRoutes.js");
+const appointmentRoutes = require("./routes/appointmentRoutes.js");
+const reviewRoutes = require("./routes/reviewRoutes.js");
 const morgan = require("morgan");
 const rateLimit = require("./middlewares/rateLimit.js");
 const errorHandler = require("./middlewares/errorHandler");
@@ -31,6 +33,9 @@ app.use("/api", rateLimit)
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/doctors", doctorRoutes);
+app.use("/api/appointments", appointmentRoutes);
+app.use("/api/reviews", reviewRoutes);
+
 app.use("/uploads", express.static(path.join(__dirname, "./uploads")));
 
 // Error handler
