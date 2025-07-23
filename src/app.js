@@ -33,7 +33,7 @@ app.use("/api", rateLimit)
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/doctors", doctorRoutes);
-app.use("/api/appointments", appointmentRoutes);
+// app.use("/api/appointments", appointmentRoutes);
 app.use("/api/reviews", reviewRoutes);
 
 app.use("/uploads", express.static(path.join(__dirname, "./uploads")));

@@ -44,6 +44,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["male", "female"],
     },
+    bloodType: {
+      type: String,
+      enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
+    },
     address: {
       type: String,
       maxlength: [500, "Address cannot exceed 500 characters"],
@@ -74,20 +78,62 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
+    age: {
+      type: Number,
+      default: null,
+    },
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+    toJSON: {
+      virtuals: true,
+      transform: function(doc, ret) {
+        if (ret.dateOfBirth) {
+          const d = new Date(ret.dateOfBirth)
+          const year = d.getFullYear()
+          const month = String(d.getMonth() + 1).padStart(2, '0')
+          const day = String(d.getDate()).padStart(2, '0')
+          ret.dateOfBirth = `${year}-${month}-${day}`
+        }
+        return ret
+      }
+    },
+    toObject: {
+      virtuals: true,
+      transform: function(doc, ret) {
+        if (ret.dateOfBirth) {
+          const d = new Date(ret.dateOfBirth)
+          const year = d.getFullYear()
+          const month = String(d.getMonth() + 1).padStart(2, '0')
+          const day = String(d.getDate()).padStart(2, '0')
+          ret.dateOfBirth = `${year}-${month}-${day}`
+        }
+        return ret
+      }
+    },
   },
 )
 
 // Virtual for user's age
-userSchema.virtual("age").get(function () {
-  if (this.dateOfBirth) {
-    return Math.floor((Date.now() - this.dateOfBirth.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
-  }
-  return null
+// userSchema.virtual("age").get(function () {
+//   if (this.dateOfBirth) {
+//     const today = new Date()
+//     const birthDate = new Date(this.dateOfBirth)
+//     let age = today.getFullYear() - birthDate.getFullYear()
+//     const m = today.getMonth() - birthDate.getMonth()
+//     if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+//       age--
+//     }
+//     return age
+//   }
+//   return null
+// })
+
+userSchema.add({
+  age: {
+    type: Number,
+    default: null,
+  },
 })
 
 // Hash password before saving

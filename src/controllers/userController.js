@@ -8,7 +8,12 @@ const getProfile = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        res.status(200).json({ user });
+        const age = user.dateOfBirth ? calculateAge(user.dateOfBirth) : null;
+        if (age !== null && user.age !== age) {
+          user.age = age;
+          await user.save();
+        }
+        res.status(200).json({ user: { ...user.toObject(), age } });
     } catch (error) {
         console.error("Get profile error:", error);
         res.status(500).json({ message: "Internal server error" });
@@ -19,7 +24,7 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
     try {
         const userId = req.user.userId;
-        const { name, email, phone, dateOfBirth, gender, address, emergencyContact } = req.body;
+        const { name, email, phone, dateOfBirth, gender,bloodType, address, emergencyContact } = req.body;
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -35,13 +40,17 @@ const updateProfile = async (req, res) => {
         if (phone) user.phone = phone;
         if (dateOfBirth) user.dateOfBirth = dateOfBirth;
         if (gender) user.gender = gender;
+        if (bloodType) user.bloodType = bloodType;
         if (address) user.address = address;
         if (emergencyContact) user.emergencyContact = emergencyContact;
         if (req.file) {
             user.avatar = `/uploads/avatars/${req.file.filename}`;
         }
         user.updatedAt = Date.now();
+        // Age hesapla ve kaydet
+        user.age = user.dateOfBirth ? calculateAge(user.dateOfBirth) : null;
         await user.save();
+        const age = user.age;
         const userResponse = {
             _id: user._id,
             name: user.name,
@@ -50,7 +59,8 @@ const updateProfile = async (req, res) => {
             role: user.role,
             isActive: user.isActive,
             updatedAt: user.updatedAt,
-            avatar: user.avatar
+            avatar: user.avatar,
+            age
         };
         res.status(200).json({ 
             message: "Profile updated successfully", 
@@ -90,7 +100,16 @@ const deleteUser = async (req, res) => {
 const getAllUsers = async (req, res) => {
     try {
         const users = await User.find({}).select("-password");
-        res.status(200).json({ users });
+        // Age güncellemesi
+        for (const user of users) {
+          const age = user.dateOfBirth ? calculateAge(user.dateOfBirth) : null;
+          if (age !== null && user.age !== age) {
+            user.age = age;
+            await user.save();
+          }
+        }
+        const usersWithAge = users.map(user => ({ ...user.toObject(), age: user.age }));
+        res.status(200).json({ users: usersWithAge });
     } catch (error) {
         console.error("Get all users error:", error);
         res.status(500).json({ message: "Internal server error" });
@@ -105,7 +124,12 @@ const getUserById = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        res.status(200).json({ user });
+        const age = user.dateOfBirth ? calculateAge(user.dateOfBirth) : null;
+        if (age !== null && user.age !== age) {
+          user.age = age;
+          await user.save();
+        }
+        res.status(200).json({ user: { ...user.toObject(), age } });
     } catch (error) {
         console.error("Get user by ID error:", error);
         res.status(500).json({ message: "Internal server error" });
@@ -116,7 +140,7 @@ const getUserById = async (req, res) => {
 const updateUserById = async (req, res) => {
     try {
         const { userId } = req.params;
-        const { name, email, phone, role, isActive, dateOfBirth, gender, address, emergencyContact, avatar } = req.body;
+        const { name, email, phone, role, isActive, dateOfBirth, gender, bloodType, address, emergencyContact } = req.body;
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -134,11 +158,14 @@ const updateUserById = async (req, res) => {
         if (typeof isActive === 'boolean') user.isActive = isActive;
         if (dateOfBirth) user.dateOfBirth = dateOfBirth;
         if (gender) user.gender = gender;
+        if (bloodType) user.bloodType = bloodType;
         if (address) user.address = address;
         if (emergencyContact) user.emergencyContact = emergencyContact;
-        if (avatar) user.avatar = avatar;
         user.updatedAt = Date.now();
+        // Age hesapla ve kaydet
+        user.age = user.dateOfBirth ? calculateAge(user.dateOfBirth) : null;
         await user.save();
+        const age = user.age;
         const userResponse = {
             _id: user._id,
             name: user.name,
@@ -146,7 +173,8 @@ const updateUserById = async (req, res) => {
             phone: user.phone,
             role: user.role,
             isActive: user.isActive,
-            updatedAt: user.updatedAt
+            updatedAt: user.updatedAt,
+            age
         };
         res.status(200).json({ 
             message: "User updated successfully", 
@@ -181,6 +209,18 @@ const deleteUserById = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+// Yardımcı fonksiyon
+function calculateAge(dateOfBirth) {
+  const today = new Date();
+  const birthDate = new Date(dateOfBirth);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
 
 module.exports = {
     getProfile,
